@@ -86,6 +86,7 @@ func runSparkJob(w http.ResponseWriter, r *http.Request) {
 	}(id)
 }
 
+// checkStatus is used to check the progress of certain job
 func checkStatus(w http.ResponseWriter, r *http.Request) {
 	jobId := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(jobId)
@@ -93,9 +94,7 @@ func checkStatus(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Wrong id!\n"))
 		return
 	}
-	// test database insert
-	// client.Insert(id, "/home/a/b/trainingdata;/home/testingdata")
-	// test database lookup
+
 	resultPath, err := client.GetFromResult(id)
 	if err != nil {
 		w.Write([]byte("Job id does not exist!\n"))
