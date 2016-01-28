@@ -86,6 +86,28 @@ func runSparkJob(w http.ResponseWriter, r *http.Request) {
 	}(id)
 }
 
+// checkStatus is used to check the progress of certain job
+func checkStatus(w http.ResponseWriter, r *http.Request) {
+	jobId := r.URL.Query().Get("id")
+	id, err := strconv.Atoi(jobId)
+	if err != nil {
+		w.Write([]byte("Wrong id!\n"))
+		return
+	}
+
+	resultPath, err := client.GetFromResult(id)
+	if err != nil {
+		w.Write([]byte("Job id does not exist!\n"))
+		return
+	}
+	if resultPath == "" {
+		w.Write([]byte("Job ID:" + jobId + " is still running\n"))
+	} else {
+		w.Write([]byte("Job ID:" + jobId + " is done\n"))
+	}
+	return
+}
+
 func NewCassandraClient(CassandraHostPort string) (*CassandraClient, error) {
 	cluster := gocql.NewCluster(CassandraHostPort)
 	cluster.Keyspace = "honey"
@@ -117,6 +139,19 @@ func (c *CassandraClient) Get(id int) (string, error) {
 	return path, nil
 }
 
+// this function is for temparary use, I will refactor this file in future
+func (c *CassandraClient) GetFromResult(id int) (string, error) {
+	var path string
+
+	if err := c.session.Query(`SELECT id, path FROM result WHERE id = ?`,
+		id).Consistency(gocql.One).Scan(&id, &path); err != nil {
+		log.Println(err)
+		return "", err
+	}
+	fmt.Println("Result:", id, path)
+	return path, nil
+}
+
 func (c *CassandraClient) Insert(id int, path string) {
 	if err := c.session.Query(`INSERT INTO result (id, path) VALUES (?, ?)`,
 		id, path).Exec(); err != nil {
@@ -133,6 +168,9 @@ func main() {
 	hostPort := net.JoinHostPort("", *port)
 	// sample request: curl localhost:32768/?id=2
 	http.HandleFunc("/", runSparkJob)
+
+	// sample request: curl localhost:32768/check/?id=2
+	http.HandleFunc("/check/", runSparkJob)
 
 	var err error
 	client, err = NewCassandraClient(CassandraHostPort)
