@@ -4,6 +4,7 @@ import (
 	"backendAPI/models"
 	"encoding/json"
 	"github.com/astaxie/beego"
+	"time"
 )
 
 // Operations about spark tasks
@@ -20,8 +21,11 @@ type TaskController struct {
 func (t *TaskController) Post() {
 	var task models.Task
 	json.Unmarshal(t.Ctx.Input.RequestBody, &task)
+	task.CreateAt = time.Now()
 	taskid := models.AddTask(task)
-	t.Data["json"] = map[string]string{"TaskId": taskid}
+	task = models.GetTask(taskid)
+	task.Start()
+	t.Data["json"] = map[string]string{"TaskId": taskid, "Status": "Started"}
 	t.ServeJSON()
 }
 
@@ -44,6 +48,32 @@ func (t *TaskController) Get() {
 	t.ServeJSON()
 }
 
+// @Title Check Status
+// @Description check job status by taskid
+// @Param	taskId		path 	string	true		"the taskid you want to get"
+// @Success 200 {task} models.Object
+// @Failure 403 :taskId is empty
+// @router /check/:taskId [get]
+func (t *TaskController) Check() {
+	taskId := t.Ctx.Input.Param(":taskId")
+	if taskId != "" {
+		task, err := models.GetTask(taskId)
+		if err != nil {
+			t.Data["json"] = err.Error()
+		} else {
+			result := models.DBGet(taskId)
+			//var duration string // TODO
+			t.Data["json"] = map[string]string{
+				"duration":  "6.341 secs",
+				"startTime": task.CreatedAt,
+				"result":    result,
+				"status":    "",
+				"jobId":     taskId}
+		}
+	}
+	t.ServeJSON()
+}
+
 // @Title GetAll
 // @Description get all tasks
 // @Success 200 {task} models.Task
@@ -54,27 +84,6 @@ func (t *TaskController) GetAll() {
 	t.Data["json"] = task
 	t.ServeJSON()
 }
-
-// @Title update
-// @Description update the task
-// @Param	taskId		path 	string	true		"The taskid you want to update"
-// @Param	body		body 	models.Object	true		"The body"
-// @Success 200 {task} models.Object
-// @Failure 403 :taskId is empty
-// @router /:taskId [put]
-/*func (t *TaskController) Put() {
-	taskId := t.Ctx.Input.Param(":taskId")
-	var task models.Task
-	json.Unmarshal(t.Ctx.Input.RequestBody, &task)
-
-	err := models.UpdateT(taskId, t.Score)
-	if err != nil {
-		t.Data["json"] = err.Error()
-	} else {
-		t.Data["json"] = "update success!"
-	}
-	t.ServeJSON()
-}*/
 
 // @Title delete
 // @Description delete the task
