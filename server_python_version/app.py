@@ -2,12 +2,12 @@ from flask import Flask
 from fetch import fetch
 from settings import PORT
 from subprocess import call
-import time
-import os
+import time,os,request
 
 app = Flask(__name__)
 
 FILE_PATH = '/home/honeycomb/SparkTeam/part-00000'
+DB_PATH = '/db/add'
 
 @app.route('/path')
 def path():
@@ -25,6 +25,8 @@ def run():
     with open(FILE_PATH) as fin:
         str =  fin.read()
     str = str.replace('\n', ',')
+    r = request.post(DB_PATH, data=str)
+    print(r.status_code, r.reason)
     return '[' +  str[:-1] + ']'
 
 @app.route('/id/<id>')
