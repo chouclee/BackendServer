@@ -20,11 +20,12 @@ type TaskController struct {
 // @router / [post]
 func (t *TaskController) Post() {
 	var task models.Task
+	//var err error
 	json.Unmarshal(t.Ctx.Input.RequestBody, &task)
 	task.CreateAt = time.Now()
 	taskid := models.AddTask(task)
-	task = models.GetTask(taskid)
-	task.Start()
+	ta, _ := models.GetTask(taskid)
+	ta.Start()
 	t.Data["json"] = map[string]string{"TaskId": taskid, "Status": "Started"}
 	t.ServeJSON()
 }
@@ -61,14 +62,19 @@ func (t *TaskController) Check() {
 		if err != nil {
 			t.Data["json"] = err.Error()
 		} else {
-			result := models.DBGet(taskId)
+			result, err := models.DBGet(taskId)
 			//var duration string // TODO
-			t.Data["json"] = map[string]string{
-				"duration":  "6.341 secs",
-				"startTime": task.CreatedAt,
-				"result":    result,
-				"status":    "",
-				"jobId":     taskId}
+			if err != nil {
+				t.Data["json"] = map[string]string{
+					"duration":  "6.341 secs",
+					"startTime": task.CreateAt.String(),
+					"result":    result,
+					"status":    "",
+					"jobId":     taskId,
+				}
+			} else {
+				t.Data["json"] = err.Error()
+			}
 		}
 	}
 	t.ServeJSON()

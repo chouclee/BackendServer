@@ -3,7 +3,9 @@ package models
 import (
 	"errors"
 	"log"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -15,7 +17,7 @@ type Task struct {
 	TaskId    string
 	UserId    string
 	ModelTpye string
-	CreatedAt Time
+	CreateAt  time.Time
 	Algorithm string
 }
 
@@ -25,10 +27,8 @@ func init() {
 
 func (t *Task) Start() {
 	id := t.TaskId
-	// test database insert
-	// client.Insert(id, "/home/a/b/trainingdata;/home/testingdata")
-	// test database lookup
-	storedPaths, err := dblib.client.Get(id)
+	// TO DO: change this by getting parameters from task
+	storedPaths, err := DBGet(id)
 	if err != nil {
 		//w.Write([]byte("Job id does not exist!\n"))
 		return
@@ -36,15 +36,11 @@ func (t *Task) Start() {
 	paths := strings.Split(storedPaths, ";") // split by ";"
 	if len(paths) != 2 {                     // check paths
 		log.Println("Paths in database is worng: " + storedPaths)
-		//w.Write([]byte("Paths in database is worng: " + storedPaths))
 		return
 	}
-	//w.Write([]byte("Job ID:" + jobId + "\n"))
-	//w.Write([]byte("Training Data: " + paths[0] + "\n"))
-	//w.Write([]byte("Testing Data:" + paths[1] + "\n"))
 
 	// call external python script
-	go func(id int) {
+	go func(id string) {
 		//outFile := "/home/honeycomb/HoneyBuzzard/output/result_" + jobId + ".json"
 		outDir := "/home/honeycomb/HoneyBuzzard/output"
 		//output,err := exec.Command("/bin/spark-submit", "/home/honeycomb/SparkTeam/PySpark.py",
@@ -52,8 +48,8 @@ func (t *Task) Start() {
 		log.Println("testing data: " + paths[0])
 		log.Println("training data:" + paths[1])
 		log.Println("out dir: " + outDir)
-		err := exec.Command("/bin/spark-submit", "/home/honeycomb/SparkTeam/PySpark.py",
-			paths[0], paths[1], outDir).Run()
+		//err := exec.Command("/bin/spark-submit", "/home/honeycomb/SparkTeam/PySpark.py",
+		//	paths[0], paths[1], outDir).Run()
 		if err != nil {
 			log.Println(err)
 		}
@@ -61,14 +57,14 @@ func (t *Task) Start() {
 		//	log.Fatal(err) // caution: log.Fatal may terminate the program
 		//} else {
 		//log.Println(string(output))
-		filePath := outDir + "/result_" + jobId
+		filePath := outDir + "/result_" + id
 		log.Println(filePath)
 		err = os.Rename(outDir+"/part-00000", filePath)
 		if err != nil {
 			log.Println("file does not exist")
 			return
 		}
-		dblib.client.Insert(id, filePath)
+		//client.Insert(id, filePath)
 		//}
 	}(id)
 
@@ -76,7 +72,7 @@ func (t *Task) Start() {
 
 func AddTask(task Task) (TaskId string) {
 	task.TaskId = "honeycomb" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	task.CreatedAt = time.Now()
+	task.CreateAt = time.Now()
 	Tasks[task.TaskId] = &task
 	return task.TaskId
 }
