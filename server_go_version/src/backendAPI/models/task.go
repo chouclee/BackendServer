@@ -66,8 +66,25 @@ func (t *Task) Start() {
 		}
 		//client.Insert(id, filePath)
 		//}
+		err = t.CallBack(task)
+		if err != nil {
+			log.Println("failed to inform front end")
+			return
+		}
 	}(id)
 
+}
+
+/*
+ *  Call front end's API to inform that the job has finished
+ */
+func (t *Task) CallBack() error {
+	resp, err := http.PostForm("http://example.com/form",
+		url.Values{"Status": {"Finished"}, "id": {t.TaskId}})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func AddTask(task Task) (TaskId string) {
