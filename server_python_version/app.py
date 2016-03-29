@@ -2,12 +2,40 @@ from flask import Flask
 from fetch import fetch
 from settings import PORT
 from subprocess import call
-import time,os,request
+import time,os,request,requests
 
 app = Flask(__name__)
 
 FILE_PATH = '/home/honeycomb/SparkTeam/part-00000'
 DB_PATH = '/db/add'
+BACK_URL = ''
+
+@app.route("/prepare", methods=['POST'])
+def preparation_work_before_calling_Spark():
+    print str(request.form['task_id']) + str(request.form['address'])
+    # TO DO
+    # given uploaded file address and task id, make shell call to run Spark job
+    return "received"
+
+def monitoring_during_running_Spark_jobs():
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+    path = sys.argv[1] if len(sys.argv) > 1 else '.'
+    event_handler = LoggingEventHandler()
+    observer = Observer()
+    observer.schedule(event_handler, path, recursive=True)
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+    return true
+
+def relay_of_Spark_jobs_output(content):
+    r = requests.post(BACK_URL, data=my_json)
 
 @app.route('/path')
 def path():
